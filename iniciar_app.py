@@ -7,8 +7,8 @@ import sys
 import time
 
 def main():
-    # Sempre serve os arquivos da pasta original do projeto
-    application_path = r"C:\Users\122589\Documents\Workspace.AI\Personal\TechPulse"
+    # Resolve o diretório do projeto dinamicamente (onde o script está)
+    application_path = os.path.dirname(os.path.abspath(__file__))
 
     os.chdir(application_path)
 
