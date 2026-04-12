@@ -12,12 +12,32 @@ def main():
 
     os.chdir(application_path)
 
+    # Handler customizado que silencia ConnectionResetError
+    # (ocorre quando o navegador cancela o download de arquivos grandes como hacker.mp3)
+    class QuietHTTPHandler(http.server.SimpleHTTPRequestHandler):
+        def handle_one_request(self):
+            try:
+                super().handle_one_request()
+            except (ConnectionResetError, ConnectionAbortedError, BrokenPipeError):
+                pass  # Navegador cancelou a conexão — comportamento normal
+
+        def log_message(self, format, *args):
+            # Mantém os logs normais
+            super().log_message(format, *args)
+
     # Servidor com suporte a threads para não travar
     class ThreadingSimpleServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-        pass
+        # Silencia exceções de conexão resetada no nível do servidor também
+        def handle_error(self, request, client_address):
+            import sys
+            error = sys.exc_info()[1]
+            if isinstance(error, (ConnectionResetError, ConnectionAbortedError, BrokenPipeError)):
+                pass  # Ignora silenciosamente — é o navegador cancelando download
+            else:
+                super().handle_error(request, client_address)
 
     # Usa a porta 0 para pegar uma porta livre automaticamente
-    server = ThreadingSimpleServer(("127.0.0.1", 0), http.server.SimpleHTTPRequestHandler)
+    server = ThreadingSimpleServer(("127.0.0.1", 0), QuietHTTPHandler)
     port = server.server_address[1]
 
     server_thread = threading.Thread(target=server.serve_forever)
