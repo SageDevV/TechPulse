@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TechPulse — Newsletter de Tecnologia</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%238b5cf6'/><stop offset='100%25' stop-color='%233b82f6'/></linearGradient></defs><circle cx='50' cy='50' r='48' fill='url(%23g)'/><text x='50' y='68' font-size='60' text-anchor='middle' fill='%23FFD700'>⚡</text></svg>" />
+  <meta name="description" content="Seu boletim diário de tecnologia com as últimas novidades em Inteligência Artificial, Game Development e Cloud Computing." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* Prevent FOIT: render text immediately with system fonts while webfonts load */
+    .card-title, .column-title, .modal-title, .logo-text {
+      font-synthesis: none;
+    }
+  </style>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <canvas id="bg-particles" class="bg-particles"></canvas>
+  <audio id="bgMusic" loop preload="auto" src="hacker.mp3"></audio>
+
+  <!-- ===== HEADER ===== -->
+  <header class="header">
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <span class="logo-text">TechPulse</span>
+        <span class="logo-badge">LIVE</span>
+      </div>
+      <div class="header-meta">
+        <span class="header-date" id="headerDate"></span>
+        <button class="refresh-btn" id="refreshBtn" title="Atualizar feed">
+          <span class="refresh-icon">↻</span>
+          <span>Atualizar</span>
+        </button>
+        <button class="music-toggle-btn" id="musicToggle" title="Tocar/Pausar música">
+          <span class="music-icon" id="musicIcon">🔇</span>
+        </button>
+      </div>
+    </div>
+    <div class="header-ticker" id="ticker">
+      <div class="ticker-track" id="tickerTrack">
+        <span class="ticker-item">Carregando últimas notícias...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main">
+
+    <!-- Status Bar -->
+    <div class="status-bar" id="statusBar">
+      <span class="status-dot" id="statusDot"></span>
+      <span id="statusText">Buscando feeds...</span>
+    </div>
+
+    <!-- Categories Grid -->
+    <div class="categories-grid">
+
+      <!-- AI Column -->
+      <section class="category-column" id="colAI">
+        <div class="column-header ai-header">
+          <div class="column-icon">🤖</div>
+          <div>
+            <h2 class="column-title">Inteligência Artificial</h2>
+            <p class="column-subtitle">Modelos, Pesquisas & Inovações</p>
+          </div>
+          <span class="column-count" id="countAI">0</span>
+        </div>
+        <div class="cards-container" id="cardsAI">
+          <div class="skeleton-loader">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Game Dev Column -->
+      <section class="category-column" id="colGame">
+        <div class="column-header game-header">
+          <div class="column-icon">🎮</div>
+          <div>
+            <h2 class="column-title">Game Development</h2>
+            <p class="column-subtitle">Engines, Técnicas & Releases</p>
+          </div>
+          <span class="column-count" id="countGame">0</span>
+        </div>
+        <div class="cards-container" id="cardsGame">
+          <div class="skeleton-loader">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- General Knowledge Column -->
+      <section class="category-column" id="colGeneral">
+        <div class="column-header general-header">
+          <div class="column-icon">💡</div>
+          <div>
+            <h2 class="column-title">Conhecimentos Úteis</h2>
+            <p class="column-subtitle">Dicas, Ferramentas &amp; Curiosidades</p>
+          </div>
+          <button id="btnSurprise" class="surprise-icon-btn" title="Surpreenda-me com novos conhecimentos">?</button>
+          <span class="column-count" id="countGeneral">0</span>
+        </div>
+        <div class="cards-container" id="cardsGeneral">
+          <div class="skeleton-loader">
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+            <div class="skeleton-card"></div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ===== MODAL ===== -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal" id="modal">
+      <button class="modal-close" id="modalClose">✕</button>
+      <div class="modal-category-tag" id="modalCategory"></div>
+      <div class="modal-image-wrapper" id="modalImageWrapper"></div>
+      <h1 class="modal-title" id="modalTitle"></h1>
+      <div class="modal-meta">
+        <span class="modal-source" id="modalSource"></span>
+        <span class="modal-date" id="modalDate"></span>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <a class="modal-link" id="modalLink" target="_blank" rel="noopener noreferrer">
+        Ler artigo completo →
+      </a>
+    </div>
+  </div>
+
+  <!-- ===== TOAST ===== -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>
