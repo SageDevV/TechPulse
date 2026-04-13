@@ -802,13 +802,19 @@ fetchAll();
   
   function animate() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // Batch drawing for performance
     for (const p of particles) {
       p.update();
-      p.draw();
+      ctx.globalAlpha = p.opacity;
+      ctx.fillStyle = p.color;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fill();
     }
     requestAnimationFrame(animate);
   }
   
-  animate();
+  requestAnimationFrame(animate);
 })();
 

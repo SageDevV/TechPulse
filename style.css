@@ -83,10 +83,12 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(6, 10, 18, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(6, 10, 18, 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border-subtle);
+  /* Force layer promotion for the header */
+  transform: translateZ(0);
 }
 
 .header-inner {
@@ -225,6 +227,8 @@ body {
   border-top: 1px solid var(--border-subtle);
   padding: 0.4rem 0;
   background: rgba(255,255,255,0.02);
+  /* Performance optimization: isolate ticker layout */
+  contain: content;
 }
 
 .ticker-track {
@@ -233,6 +237,11 @@ body {
   animation: ticker 40s linear infinite;
   white-space: nowrap;
   width: max-content;
+  /* Hardware Acceleration */
+  will-change: transform;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000;
 }
 
 .ticker-track:hover { animation-play-state: paused; }

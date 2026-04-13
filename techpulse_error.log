@@ -1,0 +1,31 @@
+[Mon Apr 13 14:13:08 2026] Erro no Tray Icon: Traceback (most recent call last):
+  File "C:\Users\usuario\Documents\TechPulse\iniciar_app.py", line 90, in main
+    pystray.Menu.Separator(),
+    ^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: type object 'Menu' has no attribute 'Separator'
+
+[Mon Apr 13 14:13:23 2026] Erro no servidor (Handler): Traceback (most recent call last):
+  File "C:\Users\usuario\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 692, in process_request_thread
+    self.finish_request(request, client_address)
+  File "C:\Users\usuario\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 362, in finish_request
+    self.RequestHandlerClass(request, client_address, self)
+  File "C:\Users\usuario\Documents\TechPulse\iniciar_app.py", line 38, in __init__
+    super().__init__(*args, directory=application_path, **kwargs)
+  File "C:\Users\usuario\AppData\Local\Programs\Python\Python312\Lib\http\server.py", line 672, in __init__
+    super().__init__(*args, **kwargs)
+  File "C:\Users\usuario\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 761, in __init__
+    self.handle()
+  File "C:\Users\usuario\AppData\Local\Programs\Python\Python312\Lib\http\server.py", line 436, in handle
+    self.handle_one_request()
+  File "C:\Users\usuario\AppData\Local\Programs\Python\Python312\Lib\http\server.py", line 424, in handle_one_request
+    method()
+  File "C:\Users\usuario\AppData\Local\Programs\Python\Python312\Lib\http\server.py", line 679, in do_GET
+    self.copyfile(f, self.wfile)
+  File "C:\Users\usuario\AppData\Local\Programs\Python\Python312\Lib\http\server.py", line 878, in copyfile
+    shutil.copyfileobj(source, outputfile)
+  File "C:\Users\usuario\AppData\Local\Programs\Python\Python312\Lib\shutil.py", line 204, in copyfileobj
+    fdst_write(buf)
+  File "C:\Users\usuario\AppData\Local\Programs\Python\Python312\Lib\socketserver.py", line 840, in write
+    self._sock.sendall(b)
+ConnectionResetError: [WinError 10054] Foi forçado o cancelamento de uma conexão existente pelo host remoto
+
