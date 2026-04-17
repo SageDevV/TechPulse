@@ -1,0 +1,37 @@
+{
+  "hosting": {
+    "public": "public",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "build/**",
+      "dist/**",
+      "*.py",
+      "*.spec",
+      "*.bat",
+      "*.log",
+      "*.ico"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=3600"
+          }
+        ]
+      },
+      {
+        "source": "**/*.@(mp3|ogg|wav)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "public, max-age=604800"
+          }
+        ]
+      }
+    ]
+  }
+}
