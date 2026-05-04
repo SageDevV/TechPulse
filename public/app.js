@@ -1,7 +1,7 @@
 /* =====================================================
-   TECHPULSE — app.js v4.0
+   TECHPULSE — app.js v5.0
    + Tradução automática para PT-BR (MyMemory API)
-   + Ícone de hype + ordenação por engajamento
+   + Apenas notícias do dia
    ===================================================== */
 'use strict';
 
@@ -10,61 +10,107 @@ const HN_SEARCH  = 'https://hn.algolia.com/api/v1';
 const HN_ITEMS   = 'https://hn.algolia.com/api/v1/items/';
 const HN_DISCUSS = 'https://news.ycombinator.com/item?id=';
 const TRANSLATE  = 'https://api.mymemory.translated.net/get';
+const DEVTO_API  = 'https://dev.to/api/articles';
+const LOBSTERS   = 'https://lobste.rs';
+const REDDIT     = 'https://www.reddit.com';
 
-/* ── Queries por categoria ──────────────────────────── */
+/* ── Queries HN por categoria (expandidas) ─────────── */
 const QUERIES = {
   ai: [
     'ChatGPT Claude Gemini LLM',
     'OpenAI Anthropic machine learning',
     'artificial intelligence GPT model',
     'deep learning neural network AI',
+    'transformer attention model',
+    'AI agent autonomous',
+    'copilot code assistant AI',
+    'stable diffusion midjourney image generation',
+    'llama mistral open source model',
+    'NLP natural language processing',
+    'computer vision object detection',
+    'reinforcement learning robotics',
   ],
   game: [
     'Unity Unreal Godot game engine',
     'indie game development Steam',
     'game developer graphics rendering',
     'Nintendo PlayStation Xbox release',
+    'game jam itch.io',
+    'shader graphics GPU game',
+    'procedural generation roguelike',
+    'VR AR virtual reality game',
+    'game design mechanics gameplay',
+    'pixel art 2D platformer',
+    'multiplayer networking game',
+    'Blender 3D modeling animation',
   ],
-  general: [
-    'best practices programming',
-    'productivity tools web',
-    'open source projects weekend',
-    'show hn useful tool',
+  cyber: [
+    'cybersecurity hacking infosec',
+    'malware ransomware vulnerability',
+    'zero-day exploit patch',
+    'reverse engineering cryptography',
+    'data breach leak privacy',
+    'phishing social engineering',
+    'network security firewall',
+    'penetration testing pentest',
+    'defcon blackhat conference',
+    'linux kernel exploit',
+    'OWASP web security',
+    'cloud security IAM',
   ],
 };
 
-const GENERAL_SURPRISE_QUERIES = [
-  'architecture patterns design',
-  'refactoring code smells',
-  'linux terminal bash tips',
-  'git advanced commands',
-  'ui ux design principles',
-  'career advice software engineer',
-  'book recommendations programming',
-  'system design algorithms',
-  'docker kubernetes devops',
-  'performance optimization web',
-];
+
+
+/* ── Subreddits por categoria ──────────────────────── */
+const REDDIT_SUBS = {
+  ai: [
+    'artificial', 'MachineLearning', 'ChatGPT',
+    'LocalLLaMA', 'singularity', 'deeplearning',
+  ],
+  game: [
+    'gamedev', 'indiegaming', 'Unity3D',
+    'unrealengine', 'godot', 'gameassets',
+  ],
+  cyber: [
+    'cybersecurity', 'netsec', 'hacking',
+    'ReverseEngineering', 'AskNetsec', 'malware',
+  ],
+};
+
+/* ── Tags Dev.to por categoria ─────────────────────── */
+const DEVTO_TAGS = {
+  ai:      ['ai', 'machinelearning', 'deeplearning', 'chatgpt'],
+  game:    ['gamedev', 'unity', 'godot', 'indiedev'],
+  cyber:   ['security', 'cybersecurity', 'infosec', 'hacking'],
+};
+
+/* ── Tags Lobsters por categoria ───────────────────── */
+const LOBSTERS_TAGS = {
+  ai:      ['ai', 'ml'],
+  game:    ['games'],
+};
 
 /* ── Metadados das categorias ───────────────────────── */
 const CATS = {
   ai:      { label: 'Inteligência Artificial', icon: '🤖', cls: 'ai'    },
   game:    { label: 'Game Development',        icon: '🎮', cls: 'game'  },
-  general: { label: 'Conhecimentos Úteis',     icon: '💡', cls: 'general' },
+  cyber:   { label: 'Cyber Segurança',         icon: '🛡️', cls: 'cyber' },
 };
 
-/* ── Níveis de hype (baseado em pontos + comentários HN) */
-const HYPE_LEVELS = [
-  { min: 1500, icon: '🔥', label: 'Viral',     cls: 'hype-viral'   },
-  { min: 600,  icon: '⚡', label: 'Trending',  cls: 'hype-trending' },
-  { min: 150,  icon: '📈', label: 'Em Alta',   cls: 'hype-rising'  },
-  { min: 30,   icon: '💡', label: 'Relevante', cls: 'hype-notable' },
-  { min: 0,    icon: '🆕', label: 'Novo',      cls: 'hype-new'     },
-];
+/* ── Filtro de data (apenas notícias do dia) ──────── */
+function isToday(isoDate) {
+  if (!isoDate) return false;
+  const articleDate = new Date(isoDate);
+  const now = new Date();
+  return articleDate.getFullYear() === now.getFullYear()
+      && articleDate.getMonth()    === now.getMonth()
+      && articleDate.getDate()     === now.getDate();
+}
 
 /* ── Estado ─────────────────────────────────────────── */
 const state = {
-  articles : { ai: [], game: [], general: [] },
+  articles : { ai: [], game: [], cyber: [] },
   loading  : false,
 };
 
@@ -89,57 +135,7 @@ function saveCache(data) {
 
 const translationCache = loadCache();
 
-/* ── Hype Promotion Tracker (localStorage) ────────── */
-const TRACKER_KEY = 'tp_hype_tracker_v1';
-const DAYS_3      = 3 * 24 * 60 * 60 * 1000;
-const DAYS_7      = 7 * 24 * 60 * 60 * 1000;
 
-function loadTracker() {
-  try { return JSON.parse(localStorage.getItem(TRACKER_KEY)) || {}; }
-  catch { return {}; }
-}
-
-function saveTracker(data) {
-  try { localStorage.setItem(TRACKER_KEY, JSON.stringify(data)); }
-  catch { }
-}
-
-const hypeTracker = loadTracker();
-
-function getPromotionStatus(article) {
-  const id      = article.objectID;
-  const entry   = hypeTracker[id];
-  const score   = hypeScore(article);
-  const now     = Date.now();
-
-  // Se score >= 600 (Trending), registramos ou verificamos promoção
-  if (score >= 600) {
-    if (!entry) {
-      hypeTracker[id] = { firstSeen: now, promotedAt: null };
-      saveTracker(hypeTracker);
-    } else if (!entry.promotedAt && (now - entry.firstSeen >= DAYS_3)) {
-      entry.promotedAt = now;
-      saveTracker(hypeTracker);
-    }
-  }
-
-  // Verifica se está no período de "Hype" (1 semana após a promoção)
-  if (entry && entry.promotedAt && (now - entry.promotedAt < DAYS_7)) {
-    return true; // É Hype Especial
-  }
-  return false;
-}
-
-/* ── Cache de Notícias Anteriores ───────────────────── */
-const PREV_CACHE_KEY = 'tp_prev_news_v1';
-function loadPreviousCache() {
-  try { return JSON.parse(localStorage.getItem(PREV_CACHE_KEY)) || { ai: [], game: [], general: [] }; }
-  catch { return { ai: [], game: [], general: [] }; }
-}
-function savePreviousCache(data) {
-  try { localStorage.setItem(PREV_CACHE_KEY, JSON.stringify(data)); }
-  catch { }
-}
 
 /* ── DOM refs ───────────────────────────────────────── */
 const el  = id => document.getElementById(id);
@@ -162,11 +158,10 @@ const dom = {
   mLink      : el('modalLink'),
   cardsAI      : el('cardsAI'),
   cardsGame    : el('cardsGame'),
-  cardsGeneral : el('cardsGeneral'),
+  cardsCyber   : el('cardsCyber'),
   cntAI        : el('countAI'),
   cntGame      : el('countGame'),
-  cntGeneral   : el('countGeneral'),
-  btnSurprise  : el('btnSurprise'),
+  cntCyber     : el('countCyber'),
 };
 
 /* ── Utilidades gerais ──────────────────────────────── */
@@ -213,26 +208,21 @@ function dedupe(arr) {
   const seen = new Set();
   return arr.filter(a => {
     if (!a?.objectID) return false;
-    if (seen.has(a.objectID)) return false;
-    seen.add(a.objectID);
+    // Dedupe por título normalizado para evitar mesma notícia de fontes diferentes
+    const key = a.objectID;
+    const titleKey = (a.title || '').toLowerCase().trim().slice(0, 60);
+    if (seen.has(key) || seen.has(titleKey)) return false;
+    seen.add(key);
+    if (titleKey.length > 10) seen.add(titleKey);
     return true;
   });
 }
 
-/* ── Cálculo de hype ────────────────────────────────── */
-function hypeScore(article) {
+/* ── Pontuação para ordenação ────────────────────────── */
+function engagementScore(article) {
   const pts = article.points       || 0;
   const cmt = article.num_comments || 0;
-  // Pontos valem mais; comentários indicam discussão ativa
   return pts * 2 + cmt * 3;
-}
-
-function getHype(article) {
-  if (getPromotionStatus(article)) {
-    return { icon: '💎', label: 'Hype', cls: 'hype-special' };
-  }
-  const score = hypeScore(article);
-  return HYPE_LEVELS.find(l => score >= l.min) || HYPE_LEVELS.at(-1);
 }
 
 /* ── Tradução via MyMemory API ──────────────────────── */
@@ -279,35 +269,117 @@ async function translateBatch(articles) {
   }
 }
 
-/* ── Fetch Algolia ──────────────────────────────────── */
+/* ── Fetch Hacker News (Algolia API) ─────────────────── */
 async function hnQuery(q, byDate = true) {
   const ep  = byDate ? 'search_by_date' : 'search';
-  const url  = `${HN_SEARCH}/${ep}?query=${encodeURIComponent(q)}`
-              + `&tags=story&hitsPerPage=15&numericFilters=num_comments%3E2`;
+  const url = `${HN_SEARCH}/${ep}?query=${encodeURIComponent(q)}`
+            + `&tags=story&hitsPerPage=20&numericFilters=num_comments%3E0`;
   const r   = await fetch(url, { signal: AbortSignal.timeout(10000) });
   if (!r.ok) throw new Error(`HN ${r.status}`);
   const d   = await r.json();
   return (d.hits || []).filter(h => h.title && h.url);
 }
 
+/* ── Fetch Reddit (JSON API, sem autenticação) ──────── */
+async function redditFetch(subreddit) {
+  try {
+    const url = `${REDDIT}/r/${subreddit}/hot.json?limit=20&raw_json=1`;
+    const r   = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!r.ok) return [];
+    const d   = await r.json();
+    return (d?.data?.children || [])
+      .map(c => c.data)
+      .filter(p => !p.stickied && !p.is_self && p.url && p.title)
+      .map(p => ({
+        objectID    : `reddit_${p.id}`,
+        title       : p.title,
+        url         : p.url,
+        created_at  : new Date(p.created_utc * 1000).toISOString(),
+        author      : p.author,
+        points      : p.score || 0,
+        num_comments: p.num_comments || 0,
+        _source     : 'reddit.com',
+        _sourceIcon : '🔴',
+        _discussUrl : `https://reddit.com${p.permalink}`,
+      }));
+  } catch { return []; }
+}
+
+/* ── Fetch Dev.to (API pública) ──────────────────────── */
+async function devtoFetch(tag) {
+  try {
+    const url = `${DEVTO_API}?tag=${tag}&top=1&per_page=15`;
+    const r   = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!r.ok) return [];
+    const articles = await r.json();
+    return (articles || [])
+      .filter(a => a.title && a.url)
+      .map(a => ({
+        objectID    : `devto_${a.id}`,
+        title       : a.title,
+        url         : a.url,
+        created_at  : a.published_at || a.created_at,
+        author      : a.user?.name || a.user?.username || 'dev.to',
+        points      : a.public_reactions_count || 0,
+        num_comments: a.comments_count || 0,
+        _source     : 'dev.to',
+        _sourceIcon : '📝',
+        _discussUrl : a.url,
+      }));
+  } catch { return []; }
+}
+
+/* ── Fetch Lobste.rs (JSON feed) ─────────────────────── */
+async function lobstersFetch(tag) {
+  try {
+    const url = `${LOBSTERS}/t/${tag}.json`;
+    const r   = await fetch(url, { signal: AbortSignal.timeout(10000) });
+    if (!r.ok) return [];
+    const articles = await r.json();
+    return (articles || [])
+      .filter(a => a.title && a.url)
+      .map(a => ({
+        objectID    : `lob_${a.short_id}`,
+        title       : a.title,
+        url         : a.url,
+        created_at  : a.created_at,
+        author      : a.submitter_user?.username || 'lobste.rs',
+        points      : a.score || 0,
+        num_comments: a.comment_count || 0,
+        _source     : 'lobste.rs',
+        _sourceIcon : '🦞',
+        _discussUrl : `${LOBSTERS}/s/${a.short_id}`,
+      }));
+  } catch { return []; }
+}
+
+/* ── Fetch combinado de todas as fontes por categoria ── */
 async function fetchCategory(key, customQueries = null) {
   const queriesToRun = customQueries || QUERIES[key];
-  const settled = await Promise.allSettled(
-    queriesToRun.flatMap(q => [ hnQuery(q, true), hnQuery(q, false) ])
-  );
+
+  // 1. Hacker News (várias queries em paralelo)
+  const hnPromises = queriesToRun.flatMap(q => [hnQuery(q, true), hnQuery(q, false)]);
+
+  // 2. Reddit (múltiplos subreddits)
+  const redditPromises = (REDDIT_SUBS[key] || []).map(sub => redditFetch(sub));
+
+  // 3. Dev.to (múltiplas tags)
+  const devtoPromises = (DEVTO_TAGS[key] || []).map(tag => devtoFetch(tag));
+
+  const settled = await Promise.allSettled([
+    ...hnPromises,
+    ...redditPromises,
+    ...devtoPromises,
+  ]);
+
   const hits = settled
     .filter(r => r.status === 'fulfilled')
     .flatMap(r => r.value);
 
   return dedupe(hits)
-    .sort((a, b) => {
-      const aHype = getPromotionStatus(a);
-      const bHype = getPromotionStatus(b);
-      if (aHype && !bHype) return -1;
-      if (!aHype && bHype) return 1;
-      return hypeScore(b) - hypeScore(a);
-    })
-    .slice(0, 20);
+    .filter(a => isToday(a.created_at))
+    .sort((a, b) => engagementScore(b) - engagementScore(a))
+    .slice(0, 25);
 }
 
 /* ── Fetch principal ────────────────────────────────── */
@@ -315,49 +387,27 @@ async function fetchAll() {
   if (state.loading) return;
   state.loading = true;
   dom.refresh.classList.add('loading');
-  setStatus('loading', 'Buscando últimas notícias…');
+  setStatus('loading', 'Buscando notícias de hoje…');
 
   showSkeleton(dom.cardsAI);
   showSkeleton(dom.cardsGame);
-  showSkeleton(dom.cardsGeneral);
+  showSkeleton(dom.cardsCyber);
 
   try {
-    let [ai, game, general] = await Promise.all([
+    const [ai, game, cyber] = await Promise.all([
       fetchCategory('ai'),
       fetchCategory('game'),
-      fetchCategory('general'),
+      fetchCategory('cyber'),
     ]);
-
-    const prevCache = loadPreviousCache();
-
-    if (ai.length === 0 && prevCache.ai && prevCache.ai.length > 0) {
-      ai = prevCache.ai.map(a => ({...a, _isPrevious: true}));
-    } else if (ai.length > 0) {
-      prevCache.ai = ai.map(a => ({...a, _isPrevious: false}));
-    }
-
-    if (game.length === 0 && prevCache.game && prevCache.game.length > 0) {
-      game = prevCache.game.map(a => ({...a, _isPrevious: true}));
-    } else if (game.length > 0) {
-      prevCache.game = game.map(a => ({...a, _isPrevious: false}));
-    }
-
-    if (general.length === 0 && prevCache.general && prevCache.general.length > 0) {
-      general = prevCache.general.map(a => ({...a, _isPrevious: true}));
-    } else if (general.length > 0) {
-      prevCache.general = general.map(a => ({...a, _isPrevious: false}));
-    }
-
-    savePreviousCache(prevCache);
 
     state.articles.ai      = ai;
     state.articles.game    = game;
-    state.articles.general = general;
+    state.articles.cyber   = cyber;
 
     renderAll();
     buildTicker();
 
-    const total = ai.length + game.length + general.length;
+    const total = ai.length + game.length + cyber.length;
     const time  = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
     setStatus('success', `Atualizado às ${time} · ${total} artigos · traduzindo…`);
     toast(`✅ ${total} artigos carregados! Traduzindo títulos…`);
@@ -366,7 +416,7 @@ async function fetchAll() {
     Promise.all([
       translateBatch(state.articles.ai),
       translateBatch(state.articles.game),
-      translateBatch(state.articles.general),
+      translateBatch(state.articles.cyber),
     ]).then(() => {
       buildTicker(); // atualiza ticker com títulos traduzidos
       setStatus('success', `Atualizado às ${time} · ${total} artigos · PT-BR ✓`);
@@ -388,7 +438,7 @@ function showSkeleton(container) {
   container.innerHTML = Array(5).fill('<div class="skeleton-card"></div>').join('');
 }
 
-/* ── Construir card com DOM API (Garante estrutura limpa e sem textos soltos) ── */
+/* ── Construir card com DOM API ──────────────────────── */
 function buildCard(article, catKey) {
   const card = document.createElement('article');
   card.className = 'news-card';
@@ -396,26 +446,17 @@ function buildCard(article, catKey) {
   card.setAttribute('role', 'button');
   card.setAttribute('data-hn-id', article.objectID);
 
-  const src   = domain(article.url);
-  const hype  = getHype(article);
-  const score = hypeScore(article);
+  const src = domain(article.url);
 
   // 1. Top Section (Source + Time)
   const top = document.createElement('div');
   top.className = 'card-top';
 
-  if (article._isPrevious) {
-    card.classList.add('is-previous');
-    const oldBadge = document.createElement('span');
-    oldBadge.className = 'card-previous-badge';
-    oldBadge.textContent = '⏱️ Anterior';
-    oldBadge.title = 'Mostrando notícia de buscas passadas pois não foram encontradas novas agora.';
-    top.appendChild(oldBadge);
-  }
-  
   const tag = document.createElement('span');
   tag.className = 'card-source-tag';
-  tag.textContent = String(src).trim();
+  const sourceName = article._source || domain(article.url);
+  const sourceIcon = article._sourceIcon || '🟠';
+  tag.textContent = `${sourceIcon} ${sourceName}`;
   
   const timeEl = document.createElement('span');
   timeEl.className = 'card-time';
@@ -423,15 +464,6 @@ function buildCard(article, catKey) {
   
   top.appendChild(tag);
   top.appendChild(timeEl);
-
-  // 2. Hype Badge
-  const badge = document.createElement('div'); // Contêiner para isolar o badge
-  badge.className = 'card-badge-container';
-  const badgeInner = document.createElement('span');
-  badgeInner.className = `hype-badge ${hype.cls}`;
-  badgeInner.title = `Hype score: ${score}`;
-  badgeInner.textContent = `${hype.icon} ${hype.label}`;
-  badge.appendChild(badgeInner);
 
   // 3. Middle Section wrapper (Title + Desc)
   const bodyWrapper = document.createElement('div');
@@ -443,7 +475,8 @@ function buildCard(article, catKey) {
 
   const desc = document.createElement('p');
   desc.className = 'card-desc';
-  desc.textContent = `Compartilhado no HN por ${article.author}. Clique para ver a fonte original em ${src}.`.trim();
+  const srcLabel = article._source || 'Hacker News';
+  desc.textContent = `Via ${srcLabel} por ${article.author}. Fonte: ${src}.`.trim();
 
   bodyWrapper.appendChild(h3);
   bodyWrapper.appendChild(desc);
@@ -468,7 +501,6 @@ function buildCard(article, catKey) {
 
   // Append all in order
   card.appendChild(top);
-  card.appendChild(badge);
   card.appendChild(bodyWrapper);
   card.appendChild(footer);
 
@@ -482,7 +514,7 @@ function buildCard(article, catKey) {
 function renderAll() {
   renderColumn('ai',      dom.cardsAI,      dom.cntAI);
   renderColumn('game',    dom.cardsGame,    dom.cntGame);
-  renderColumn('general', dom.cardsGeneral, dom.cntGeneral);
+  renderColumn('cyber',   dom.cardsCyber,   dom.cntCyber);
 }
 
 function renderColumn(key, container, counter) {
@@ -494,7 +526,7 @@ function renderColumn(key, container, counter) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">📭</div>
-        <p>Nenhuma notícia encontrada.<br>Tente atualizar.</p>
+        <p>Sem notícias de hoje nesta categoria.</p>
       </div>`;
     return;
   }
@@ -509,7 +541,7 @@ function renderColumn(key, container, counter) {
 }
 
 function showError() {
-  [dom.cardsAI, dom.cardsGame, dom.cardsGeneral].forEach(c => {
+  [dom.cardsAI, dom.cardsGame, dom.cardsCyber].forEach(c => {
     c.innerHTML = `
       <div class="error-state">
         <div class="error-state-icon">⚠️</div>
@@ -523,7 +555,7 @@ function buildTicker() {
   const items = [
     ...state.articles.ai.slice(0,5).map(a      => `🤖 ${a._titlePT || a.title}`),
     ...state.articles.game.slice(0,5).map(a    => `🎮 ${a._titlePT || a.title}`),
-    ...state.articles.general.slice(0,5).map(a => `💡 ${a._titlePT || a.title}`),
+    ...state.articles.cyber.slice(0,5).map(a   => `🛡️ ${a._titlePT || a.title}`),
   ].filter(Boolean);
   if (!items.length) return;
   const doubled = [...items, ...items];
@@ -534,9 +566,7 @@ function buildTicker() {
 
 /* ── Modal ──────────────────────────────────────────── */
 async function openModal(article, catKey) {
-  const cat   = CATS[catKey];
-  const hype  = getHype(article);
-  const score = hypeScore(article);
+  const cat = CATS[catKey];
 
   dom.mCat.className   = `modal-category-tag ${cat.cls}`;
   dom.mCat.textContent = `${cat.icon} ${cat.label}`;
@@ -549,31 +579,34 @@ async function openModal(article, catKey) {
   dom.mLink.href          = article.url || HN_DISCUSS + article.objectID;
   dom.mLink.textContent   = 'Ler artigo completo →';
 
-  // Hype indicator no modal
-  let hypeEl = document.getElementById('modalHype');
-  if (!hypeEl) {
-    hypeEl = document.createElement('div');
-    hypeEl.id = 'modalHype';
-    hypeEl.className = 'modal-hype-bar';
-    dom.mTitle.insertAdjacentElement('afterend', hypeEl);
+  // Stats bar no modal (sem classificação)
+  let statsEl = document.getElementById('modalStats');
+  if (!statsEl) {
+    statsEl = document.createElement('div');
+    statsEl.id = 'modalStats';
+    statsEl.className = 'modal-stats-bar';
+    dom.mTitle.insertAdjacentElement('afterend', statsEl);
   }
-  hypeEl.innerHTML = `
-    <span class="hype-badge ${hype.cls}">${hype.icon} ${hype.label}</span>
-    <span class="modal-hype-score">Score: ${score} · ▲ ${article.points||0} pontos · 💬 ${article.num_comments||0} comentários</span>
+  statsEl.innerHTML = `
+    <span class="modal-stats-score">▲ ${article.points||0} pontos · 💬 ${article.num_comments||0} comentários</span>
   `;
 
-  // Botão de discussão HN
-  let hnBtn = document.getElementById('modalHNLink');
-  if (!hnBtn) {
-    hnBtn = document.createElement('a');
-    hnBtn.id = 'modalHNLink';
-    hnBtn.target = '_blank';
-    hnBtn.rel    = 'noopener noreferrer';
-    hnBtn.className = 'modal-link modal-link-secondary';
-    dom.mLink.insertAdjacentElement('afterend', hnBtn);
+  // Botão de discussão (adapta para a fonte)
+  const discussUrl = article._discussUrl || (HN_DISCUSS + article.objectID);
+  const discussLabel = article._source
+    ? `💬 ${article.num_comments||0} comentários em ${article._source}`
+    : `💬 ${article.num_comments||0} comentários no HN`;
+  let discussBtn = document.getElementById('modalDiscussLink');
+  if (!discussBtn) {
+    discussBtn = document.createElement('a');
+    discussBtn.id = 'modalDiscussLink';
+    discussBtn.target = '_blank';
+    discussBtn.rel    = 'noopener noreferrer';
+    discussBtn.className = 'modal-link modal-link-secondary';
+    dom.mLink.insertAdjacentElement('afterend', discussBtn);
   }
-  hnBtn.href        = HN_DISCUSS + article.objectID;
-  hnBtn.textContent = `💬 ${article.num_comments||0} comentários no HN`;
+  discussBtn.href        = discussUrl;
+  discussBtn.textContent = discussLabel;
 
   // Corpo inicial
   dom.mBody.innerHTML = `<p class="modal-translating">⏳ Carregando conteúdo e traduzindo…</p>`;
@@ -581,31 +614,36 @@ async function openModal(article, catKey) {
   dom.overlay.classList.add('open');
   document.body.style.overflow = 'hidden';
 
-  // Busca texto completo do item HN + traduz
-  try {
-    const r    = await fetch(HN_ITEMS + article.objectID, { signal: AbortSignal.timeout(6000) });
-    const data = await r.json();
-    const rawText = stripTags(data.text || '');
+  // Busca texto completo — somente para artigos do HN
+  const isHN = !article._source;
+  if (isHN) {
+    try {
+      const r    = await fetch(HN_ITEMS + article.objectID, { signal: AbortSignal.timeout(6000) });
+      const data = await r.json();
+      const rawText = stripTags(data.text || '');
 
-    let bodyText = rawText;
-    if (rawText && rawText.length > 10) {
-      // Traduz o texto completo (limitado a 480 chars por requisição)
-      const chunks  = chunkText(rawText, 450);
-      const translated = await Promise.all(chunks.map(translateText));
-      bodyText = translated.join(' ');
-    }
+      let bodyText = rawText;
+      if (rawText && rawText.length > 10) {
+        const chunks  = chunkText(rawText, 450);
+        const translated = await Promise.all(chunks.map(translateText));
+        bodyText = translated.join(' ');
+      }
 
-    if (bodyText && bodyText.length > 10) {
-      dom.mBody.innerHTML = bodyText
-        .split(/(?<=[.!?])\s{2,}|\n{2,}/)
-        .filter(p => p.trim().length > 8)
-        .slice(0, 10)
-        .map(p => `<p>${p.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;')}</p>`)
-        .join('');
-    } else {
+      if (bodyText && bodyText.length > 10) {
+        dom.mBody.innerHTML = bodyText
+          .split(/(?<=[.!?])\s{2,}|\n{2,}/)
+          .filter(p => p.trim().length > 8)
+          .slice(0, 10)
+          .map(p => `<p>${p.trim().replace(/&/g,'&amp;').replace(/</g,'&lt;')}</p>`)
+          .join('');
+      } else {
+        dom.mBody.innerHTML = buildDefaultBody(article);
+      }
+    } catch {
       dom.mBody.innerHTML = buildDefaultBody(article);
     }
-  } catch {
+  } else {
+    // Para fontes não-HN, mostra corpo padrão diretamente
     dom.mBody.innerHTML = buildDefaultBody(article);
   }
 }
@@ -628,11 +666,12 @@ function chunkText(text, maxLen) {
 
 function buildDefaultBody(a) {
   const src = domain(a.url);
+  const platform = a._source || 'Hacker News';
   return `
-    <p>Esta notícia foi compartilhada no Hacker News por <strong>${a.author || 'um membro'}</strong> e gerou <strong>${a.num_comments||0} comentários</strong> na comunidade.</p>
+    <p>Esta notícia foi compartilhada em <strong>${platform}</strong> por <strong>${a.author || 'um membro'}</strong> e gerou <strong>${a.num_comments||0} comentários</strong> na comunidade.</p>
     <p>Fonte original: <em>${src}</em></p>
-    ${a.points ? `<p>▲ <strong>${a.points} pontos</strong> de engajamento na comunidade Hacker News.</p>` : ''}
-    <p>Clique em <strong>"Ler artigo completo"</strong> para acessar o conteúdo na fonte original, ou em <strong>"comentários no HN"</strong> para ver a discussão.</p>
+    ${a.points ? `<p>▲ <strong>${a.points} pontos</strong> de engajamento na comunidade.</p>` : ''}
+    <p>Clique em <strong>"Ler artigo completo"</strong> para acessar o conteúdo na fonte original, ou no botão de <strong>"comentários"</strong> para ver a discussão.</p>
   `;
 }
 
@@ -650,57 +689,7 @@ document.addEventListener('keydown', e => {
 /* ── Botão Atualizar ────────────────────────────────── */
 dom.refresh.addEventListener('click', () => { if (!state.loading) fetchAll(); });
 
-/* ── Botão Surpreenda-me ────────────────────────────── */
-dom.btnSurprise.addEventListener('click', async () => {
-  if (state.loading) return;
-  state.loading = true;
-  dom.refresh.classList.add('loading');
-  dom.btnSurprise.textContent = '…';
-  setStatus('loading', 'Buscando surpresas gerais…');
 
-  showSkeleton(dom.cardsGeneral);
-
-  try {
-    // Escolhe 3-4 queries aleatórias do arsenal
-    const shuffled = [...GENERAL_SURPRISE_QUERIES].sort(() => 0.5 - Math.random());
-    const randomQueries = shuffled.slice(0, 4);
-
-    let general = await fetchCategory('general', randomQueries);
-
-    const prevCache = loadPreviousCache();
-    if (general.length === 0 && prevCache.general && prevCache.general.length > 0) {
-      general = prevCache.general.map(a => ({...a, _isPrevious: true}));
-    } else if (general.length > 0) {
-      prevCache.general = general.map(a => ({...a, _isPrevious: false}));
-      savePreviousCache(prevCache);
-    }
-
-    state.articles.general = general;
-    renderColumn('general', dom.cardsGeneral, dom.cntGeneral);
-    buildTicker();
-
-    const time = new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
-    setStatus('success', `Surpresa carregada às ${time}`);
-    toast(`✅ Conhecimentos Úteis atualizados! Traduzindo…`);
-
-    await translateBatch(state.articles.general);
-    buildTicker();
-    renderColumn('general', dom.cardsGeneral, dom.cntGeneral); // re-render para atualizar com a tradução
-
-  } catch (err) {
-    console.error('[TechPulse Surprise]', err);
-    dom.cardsGeneral.innerHTML = `
-      <div class="error-state">
-        <div class="error-state-icon">⚠️</div>
-        <p>Não foi possível buscar as surpresas.</p>
-      </div>`;
-    toast('❌ Falha na surpresa.');
-  } finally {
-    state.loading = false;
-    dom.refresh.classList.remove('loading');
-    dom.btnSurprise.textContent = '?';
-  }
-});
 
 /* ── Auto-refresh a cada 15 min ─────────────────────── */
 setInterval(fetchAll, 15 * 60 * 1000);

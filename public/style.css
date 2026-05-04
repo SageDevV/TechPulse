@@ -28,6 +28,11 @@
   --cloud-accent: hsl(210, 90%, 65%);
   --cloud-muted:  hsl(210, 30%, 22%);
 
+  --cyber-hue:    350;
+  --cyber-glow:   hsl(350, 85%, 55%);
+  --cyber-accent: hsl(350, 90%, 65%);
+  --cyber-muted:  hsl(350, 30%, 22%);
+
   --text-primary:   #e8eaf6;
   --text-secondary: #8892aa;
   --text-muted:     #4a5568;
@@ -44,6 +49,7 @@
   --shadow-glow-ai:    0 0 30px rgba(139,92,246,0.25);
   --shadow-glow-game:  0 0 30px rgba(52,211,153,0.20);
   --shadow-glow-cloud: 0 0 30px rgba(59,130,246,0.25);
+  --shadow-glow-cyber: 0 0 30px rgba(244,63,94,0.25);
 
   --font-head: 'Space Grotesk', sans-serif;
   --font-body: 'Inter', sans-serif;
@@ -365,6 +371,7 @@ body {
 .ai-header     { --gradient: linear-gradient(135deg, var(--ai-glow), transparent);    border-bottom: 1px solid rgba(139,92,246,0.2); }
 .game-header   { --gradient: linear-gradient(135deg, var(--game-glow), transparent);  border-bottom: 1px solid rgba(52,211,153,0.2); }
 .general-header{ --gradient: linear-gradient(135deg, var(--cloud-glow), transparent); border-bottom: 1px solid rgba(59,130,246,0.2); }
+.cyber-header  { --gradient: linear-gradient(135deg, var(--cyber-glow), transparent); border-bottom: 1px solid rgba(244,63,94,0.2); }
 
 .column-icon {
   font-size: 2rem;
@@ -400,6 +407,7 @@ body {
 #colAI      .column-count { background: rgba(139,92,246,0.15); color: var(--ai-accent);    border: 1px solid rgba(139,92,246,0.25); }
 #colGame    .column-count { background: rgba(52,211,153,0.12); color: var(--game-accent);  border: 1px solid rgba(52,211,153,0.25); }
 #colGeneral .column-count { background: rgba(59,130,246,0.15); color: var(--cloud-accent); border: 1px solid rgba(59,130,246,0.25); }
+#colCyber   .column-count { background: rgba(244,63,94,0.15);  color: var(--cyber-accent); border: 1px solid rgba(244,63,94,0.25); }
 
 /* ---- Surprise Icon Button ---- */
 .surprise-icon-btn {
@@ -487,6 +495,7 @@ body {
 #colAI      .news-card { --accent-color: var(--ai-glow);    --hover-glow: var(--shadow-glow-ai); }
 #colGame    .news-card { --accent-color: var(--game-glow);  --hover-glow: var(--shadow-glow-game); }
 #colGeneral .news-card { --accent-color: var(--cloud-glow); --hover-glow: var(--shadow-glow-cloud); }
+#colCyber   .news-card { --accent-color: var(--cyber-glow); --hover-glow: var(--shadow-glow-cyber); }
 
 @keyframes cardIn {
   from { opacity: 0; transform: translateY(12px); }
