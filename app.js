@@ -108,6 +108,15 @@ function isToday(isoDate) {
       && articleDate.getDate()     === now.getDate();
 }
 
+/* Verifica se a data está dentro das últimas X horas */
+function isRecent(isoDate, hours) {
+  if (!isoDate) return false;
+  const articleDate = new Date(isoDate);
+  const now = new Date();
+  const diffHours = (now - articleDate) / (1000 * 60 * 60);
+  return diffHours >= 0 && diffHours <= hours;
+}
+
 /* ── Estado ─────────────────────────────────────────── */
 const state = {
   articles : { ai: [], game: [], cyber: [] },
@@ -376,8 +385,20 @@ async function fetchCategory(key, customQueries = null) {
     .filter(r => r.status === 'fulfilled')
     .flatMap(r => r.value);
 
-  return dedupe(hits)
-    .filter(a => isToday(a.created_at))
+  const deduped = dedupe(hits);
+  
+  // Tenta filtrar por hoje primeiro (Política Principal)
+  let filtered = deduped.filter(a => isToday(a.created_at));
+
+  // Se não encontrar nada de hoje, tenta as últimas 6 horas (Política de Contingência)
+  if (filtered.length === 0) {
+    filtered = deduped.filter(a => isRecent(a.created_at, 6));
+    if (filtered.length > 0) {
+      console.log(`[TechPulse] Contingência ativada para ${key}: exibindo registros das últimas 6h.`);
+    }
+  }
+
+  return filtered
     .sort((a, b) => engagementScore(b) - engagementScore(a))
     .slice(0, 25);
 }
@@ -526,7 +547,7 @@ function renderColumn(key, container, counter) {
     container.innerHTML = `
       <div class="empty-state">
         <div class="empty-state-icon">📭</div>
-        <p>Sem notícias de hoje nesta categoria.</p>
+        <p>Sem notícias recentes nesta categoria.</p>
       </div>`;
     return;
   }
